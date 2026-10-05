@@ -183,47 +183,61 @@ export function PlatformOverview({ profile, stats }: PlatformOverviewProps) {
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          <PlatformCard platform="Codeforces" href={profile.codeforces_handle ? `https://codeforces.com/profile/${profile.codeforces_handle}` : null}>
-            <StatRow label="Rank" value={stats.codeforces_rating > 0 ? "Rated" : "Unrated"} />
-            <StatRow label="Rating" value={stats.codeforces_rating || 0} />
-            <StatRow label="Max Rating" value={stats.codeforces_max_rating || 0} />
-            <StatRow label="Solved" value={stats.codeforces_solved || 0} />
-          </PlatformCard>
+          {(Boolean(profile.leetcode_handle) || (stats.leetcode_total || 0) > 0) && (
+            <PlatformCard platform="LeetCode" href={profile.leetcode_handle ? `https://leetcode.com/u/${profile.leetcode_handle}/` : null}>
+              <StatRow label="Total Solved" value={stats.leetcode_total || 0} />
+              <StatRow label="Contest Rating" value={Math.round(stats.leetcode_rating) || 0} />
+              <StatRow label="Max Rating" value={Math.round(stats.leetcode_max_rating) || 0} />
+            </PlatformCard>
+          )}
 
-          <PlatformCard platform="CodeChef" href={profile.codechef_handle ? `https://www.codechef.com/users/${profile.codechef_handle}` : null}>
-            <StatRow label="Rating" value={stats.codechef_rating || 0} />
-            <StatRow label="Max Rating" value={stats.codechef_max_rating || 0} />
-            <StatRow label="Solved" value={stats.codechef_solved || 0} />
-          </PlatformCard>
+          {(Boolean(profile.gfg_handle) || (stats.gfg_solved || 0) > 0 || (stats.gfg_score || 0) > 0) && (
+            <PlatformCard platform="GeeksForGeeks" href={profile.gfg_handle ? `https://auth.geeksforgeeks.org/user/${profile.gfg_handle}` : null}>
+              <StatRow label="Score" value={stats.gfg_score || 0} />
+              <StatRow label="Solved" value={stats.gfg_solved || 0} />
+              <StatRow label="Coding Score" value={stats.gfg_score || 0} />
+            </PlatformCard>
+          )}
 
-          <PlatformCard platform="LeetCode" href={profile.leetcode_handle ? `https://leetcode.com/u/${profile.leetcode_handle}/` : null}>
-            <StatRow label="Total Solved" value={stats.leetcode_total || 0} />
-            <StatRow label="Contest Rating" value={Math.round(stats.leetcode_rating) || 0} />
-            <StatRow label="Max Rating" value={Math.round(stats.leetcode_max_rating) || 0} />
-          </PlatformCard>
+          {(Boolean(profile.codeforces_handle) || (stats.codeforces_solved || 0) > 0 || (stats.codeforces_rating || 0) > 0) && (
+            <PlatformCard platform="Codeforces" href={profile.codeforces_handle ? `https://codeforces.com/profile/${profile.codeforces_handle}` : null}>
+              <StatRow label="Rank" value={stats.codeforces_rating > 0 ? "Rated" : "Unrated"} />
+              <StatRow label="Rating" value={stats.codeforces_rating || 0} />
+              <StatRow label="Max Rating" value={stats.codeforces_max_rating || 0} />
+              <StatRow label="Solved" value={stats.codeforces_solved || 0} />
+            </PlatformCard>
+          )}
 
-          <PlatformCard platform="GeeksForGeeks" href={profile.gfg_handle ? `https://auth.geeksforgeeks.org/user/${profile.gfg_handle}` : null}>
-            <StatRow label="Score" value={stats.gfg_score || 0} />
-            <StatRow label="Solved" value={stats.gfg_solved || 0} />
-            <StatRow label="Coding Score" value={stats.gfg_score || 0} />
-          </PlatformCard>
+          {(Boolean(profile.codechef_handle) || (stats.codechef_solved || 0) > 0 || (stats.codechef_rating || 0) > 0) && (
+            <PlatformCard platform="CodeChef" href={profile.codechef_handle ? `https://www.codechef.com/users/${profile.codechef_handle}` : null}>
+              <StatRow label="Rating" value={stats.codechef_rating || 0} />
+              <StatRow label="Max Rating" value={stats.codechef_max_rating || 0} />
+              <StatRow label="Solved" value={stats.codechef_solved || 0} />
+            </PlatformCard>
+          )}
 
-          <PlatformCard platform="GitHub" href={profile.github_handle ? (profile.github_url || `https://github.com/${profile.github_handle}`) : null}>
-            <StatRow label="Contributions" value={stats.github_contributions || 0} />
-            <StatRow label="PRs Opened" value={stats.github_prs || 0} />
-            <StatRow label="Issues" value={stats.github_issues || 0} />
-          </PlatformCard>
+          {(Boolean(profile.github_handle) || (stats.valid_github_commits || 0) > 0) && (
+            <PlatformCard platform="GitHub" href={profile.github_handle ? (profile.github_url || `https://github.com/${profile.github_handle}`) : null}>
+              <StatRow label="Contributions" value={stats.valid_github_commits || 0} />
+              <StatRow label="PRs Opened" value={stats.github_prs || 0} />
+              <StatRow label="Issues" value={stats.github_issues || 0} />
+            </PlatformCard>
+          )}
 
-          <PlatformCard platform="HackerRank" href={profile.hackerrank_handle ? `https://www.hackerrank.com/profile/${profile.hackerrank_handle}` : null}>
-            <StatRow label="Badges" value={stats.hackerrank_badges || 0} />
-          </PlatformCard>
+          {(Boolean(profile.hackerrank_handle) || (stats.hackerrank_badges || 0) > 0) && (
+            <PlatformCard platform="HackerRank" href={profile.hackerrank_handle ? `https://www.hackerrank.com/profile/${profile.hackerrank_handle}` : null}>
+              <StatRow label="Badges" value={stats.hackerrank_badges || 0} />
+            </PlatformCard>
+          )}
 
-          <PlatformCard platform="takeUforward" href={profile.tuf_handle ? `https://takeuforward.org/profile/${profile.tuf_handle}` : null}>
-            <StatRow label="Total Solved" value={stats.tuf_solved || 0} />
-            <StatRow label="Easy" value={stats.tuf_easy || 0} />
-            <StatRow label="Medium" value={stats.tuf_medium || 0} />
-            <StatRow label="Hard" value={stats.tuf_hard || 0} />
-          </PlatformCard>
+          {(Boolean(profile.tuf_handle) || (stats.tuf_solved || 0) > 0) && (
+            <PlatformCard platform="takeUforward" href={profile.tuf_handle ? `https://takeuforward.org/profile/${profile.tuf_handle}` : null}>
+              <StatRow label="Total Solved" value={stats.tuf_solved || 0} />
+              <StatRow label="Easy" value={stats.tuf_easy || 0} />
+              <StatRow label="Medium" value={stats.tuf_medium || 0} />
+              <StatRow label="Hard" value={stats.tuf_hard || 0} />
+            </PlatformCard>
+          )}
         </div>
       </div>
     </StaggerItem>

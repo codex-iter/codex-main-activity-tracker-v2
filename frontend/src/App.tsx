@@ -18,12 +18,23 @@ import Leaderboard from "./pages/Leaderboard"
 import MemberProfile from "./pages/MemberProfile"
 import Arena from "./pages/Arena"
 
+import { useEffect } from "react"
+
+// ScrollToTop component to ensure route transitions always start at top of page
+function ScrollToTop() {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
+  return null
+}
+
 // Inner component so useLocation works inside Router
 function AnimatedRoutes() {
-
   const location = useLocation()
   return (
     <>
+      <ScrollToTop />
       <TransitionOverlay />
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>

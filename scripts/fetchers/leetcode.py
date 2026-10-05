@@ -5,6 +5,8 @@ from .utils import safe_fetch, _safe_int, _safe_float
 
 log = logging.getLogger(__name__)
 
+lc_semaphore = asyncio.Semaphore(2)
+
 async def fetch_leetcode(session: aiohttp.ClientSession, handle: str) -> dict:
     """
     Fetches LeetCode metrics across three endpoints concurrently:
@@ -20,6 +22,8 @@ async def fetch_leetcode(session: aiohttp.ClientSession, handle: str) -> dict:
       leetcode_rating, leetcode_max_rating, lc_contests_attended, lc_badge_name, _lc_summary, _lc_badges_list
     }
     """
+    import urllib.parse
+    encoded_handle = urllib.parse.quote(handle)
     BASE = "https://leetcode-api-pied.vercel.app"
 
     query = """
@@ -33,12 +37,16 @@ async def fetch_leetcode(session: aiohttp.ClientSession, handle: str) -> dict:
     }
     """
 
-    solved_data, summary, contest_data, badges_resp = await asyncio.gather(
-        safe_fetch(session, f"{BASE}/user/{handle}/solved"),
-        safe_fetch(session, f"{BASE}/user/{handle}"),
-        safe_fetch(session, f"{BASE}/user/{handle}/contests"),
-        safe_fetch(session, "https://leetcode.com/graphql", method="POST", json_body={"query": query, "variables": {"username": handle}})
-    )
+    async with lc_semaphore:
+        try:
+            solved_data, summary, contest_data, badges_resp = await asyncio.gather(
+                safe_fetch(session, f"{BASE}/user/{encoded_handle}/solved"),
+                safe_fetch(session, f"{BASE}/user/{encoded_handle}"),
+                safe_fetch(session, f"{BASE}/user/{encoded_handle}/contests"),
+                safe_fetch(session, "https://leetcode.com/graphql", method="POST", json_body={"query": query, "variables": {"username": handle}})
+            )
+        finally:
+            await asyncio.sleep(1.0)
 
     # 1. Total solved
     total = _safe_int(solved_data.get("total_solved"))

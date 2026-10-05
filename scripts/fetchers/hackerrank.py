@@ -5,6 +5,8 @@ from .utils import safe_fetch, _safe_int
 
 log = logging.getLogger(__name__)
 
+hr_semaphore = asyncio.Semaphore(2)
+
 async def fetch_hackerrank(session: aiohttp.ClientSession, handle: str) -> dict:
     """
     Fetches HackerRank metrics across two endpoints concurrently.
@@ -16,12 +18,18 @@ async def fetch_hackerrank(session: aiohttp.ClientSession, handle: str) -> dict:
       hackerrank_badges, hr_badges_list, hr_topics
     }
     """
-    BASE = f"https://hackerrank-stats.tashif.codes/{handle}"
+    import urllib.parse
+    encoded_handle = urllib.parse.quote(handle)
+    BASE = f"https://hackerrank-stats.tashif.codes/{encoded_handle}"
 
-    badges_payload, stats_resp = await asyncio.gather(
-        safe_fetch(session, f"{BASE}/badges"),
-        safe_fetch(session, f"{BASE}/stats"),
-    )
+    async with hr_semaphore:
+        try:
+            badges_payload, stats_resp = await asyncio.gather(
+                safe_fetch(session, f"{BASE}/badges"),
+                safe_fetch(session, f"{BASE}/stats"),
+            )
+        finally:
+            await asyncio.sleep(1.0)
 
     # 1. Badges
     badges_data = badges_payload.get("data") or {}

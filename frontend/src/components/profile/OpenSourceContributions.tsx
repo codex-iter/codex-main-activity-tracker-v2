@@ -1,5 +1,6 @@
 import { useState } from "react";
 import React from "react";
+import { createPortal } from "react-dom";
 import { GitHubCalendar } from "react-github-calendar";
 import { StaggerItem } from "../animations/ScrollReveal";
 import { Label, SectionTitle } from "./SharedStyles";
@@ -35,7 +36,7 @@ export function OpenSourceContributions({ handle }: { handle: string | null }) {
                     setTooltip({ x: rect.left + rect.width / 2, y: rect.top, activity });
                   },
                   onMouseLeave: () => setTooltip(null),
-                  className: "transition-all duration-150 hover:scale-150 hover:-translate-y-1 hover:z-20",
+                  className: "transition-all duration-150 hover:scale-150 hover:-translate-y-1 hover:z-20 cursor-crosshair",
                   style: { transformBox: 'fill-box', transformOrigin: 'center' }
                 })
               }
@@ -43,21 +44,24 @@ export function OpenSourceContributions({ handle }: { handle: string | null }) {
           </div>
         </div>
 
-        {tooltip && (
+        {/* Portal Tooltip Floating Overlay */}
+        {tooltip && createPortal(
           <div
-            className="fixed pointer-events-none z-50 bg-slate-900 text-white px-3 py-2 text-xs font-black uppercase tracking-widest border-2 border-white shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]"
-            style={{
-              left: tooltip.x,
-              top: tooltip.y - 10,
-              transform: 'translate(-50%, -100%)'
-            }}
+            className="fixed z-[100] pointer-events-none -translate-x-1/2 -translate-y-[120%]"
+            style={{ left: tooltip.x, top: tooltip.y }}
           >
-            {tooltip.activity.count} COMMITS ON {new Date(tooltip.activity.date).toLocaleDateString()}
-            <div className="absolute w-3 h-3 bg-slate-900 border-b-2 border-r-2 border-white rotate-45 left-1/2 -bottom-[7px] -translate-x-1/2" />
-          </div>
+            <div className="bg-slate-900 text-white font-mono uppercase text-xs tracking-wider border-2 border-black rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] px-3 py-2 z-50 flex flex-col items-center text-center whitespace-nowrap">
+              <span className="border-b-2 border-slate-700 pb-1 mb-1 w-full text-slate-400">
+                {new Date(tooltip.activity.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}
+              </span>
+              <span className="font-bold">
+                {tooltip.activity.count} COMMITS
+              </span>
+            </div>
+          </div>,
+          document.body
         )}
       </div>
     </StaggerItem>
   );
 }
-

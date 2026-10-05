@@ -6,7 +6,7 @@ from .utils import safe_fetch, _safe_int
 
 log = logging.getLogger(__name__)
 
-gh_search_semaphore = asyncio.Semaphore(2)
+gh_search_semaphore = asyncio.Semaphore(1)
 
 async def fetch_github(session: aiohttp.ClientSession, handle: str) -> dict:
     """
@@ -31,8 +31,11 @@ async def fetch_github(session: aiohttp.ClientSession, handle: str) -> dict:
     }
     """
     
-    pr_url = f"https://api.github.com/search/issues?q=author:{handle}+type:pr"
-    issue_url = f"https://api.github.com/search/issues?q=author:{handle}+type:issue"
+    import urllib.parse
+    encoded_handle = urllib.parse.quote(handle)
+    
+    pr_url = f"https://api.github.com/search/issues?q=author:{encoded_handle}+type:pr"
+    issue_url = f"https://api.github.com/search/issues?q=author:{encoded_handle}+type:issue"
 
     async def _fetch_graphql():
         return await safe_fetch(
@@ -48,7 +51,7 @@ async def fetch_github(session: aiohttp.ClientSession, handle: str) -> dict:
             try:
                 return await safe_fetch(session, url, method="GET", headers=rest_headers)
             finally:
-                await asyncio.sleep(1.0)
+                await asyncio.sleep(2.0)
 
     gql_data, pr_data, issue_data = await asyncio.gather(
         _fetch_graphql(),

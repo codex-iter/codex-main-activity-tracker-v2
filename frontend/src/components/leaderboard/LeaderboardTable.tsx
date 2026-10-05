@@ -67,17 +67,21 @@ interface LeaderboardTableProps {
   loading: boolean;
   error: string | null;
   isSearchActive?: boolean;
+  sortMode?: 'GLOBAL' | 'DSA' | 'DEV';
 }
 
-export default function LeaderboardTable({ members, loading, error, isSearchActive }: LeaderboardTableProps) {
+export default function LeaderboardTable({ members, loading, error, isSearchActive, sortMode = 'GLOBAL' }: LeaderboardTableProps) {
   if (loading) return <LeaderboardSkeleton />;
   if (error) return <ErrorState message={error} />;
   if (members.length === 0) return <EmptyState />;
 
+  // When search is not active, top 3 are rendered in the podium, so the list starts from index 3
+  const listMembers = isSearchActive ? members : members.slice(3);
+
   return (
     <div className="space-y-4 mt-8 w-full flex flex-col items-center">
-      {!isSearchActive && <LeaderboardPodium members={members} />}
-      {members.length > 0 && <LeaderboardList members={members} />}
+      {!isSearchActive && <LeaderboardPodium members={members} sortMode={sortMode} />}
+      {listMembers.length > 0 && <LeaderboardList members={listMembers} sortMode={sortMode} />}
     </div>
   );
 }

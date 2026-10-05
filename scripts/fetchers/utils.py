@@ -22,34 +22,50 @@ async def safe_fetch(
     method: str = "GET",
     headers: dict | None = None,
     json_body: dict | None = None,
+    max_retries: int = 3,
 ) -> dict:
     """
     Thin async wrapper around aiohttp requests.
     - Always attaches BROWSER_HEADERS (merged with any extra headers).
     - Applies REQUEST_TIMEOUT via aiohttp.ClientTimeout.
+    - Retries automatically on HTTP 429 Too Many Requests with exponential backoff.
     - Returns parsed JSON dict on success, empty dict on any error.
     """
     merged_headers = {**BROWSER_HEADERS, **(headers or {})}
     timeout = aiohttp.ClientTimeout(total=REQUEST_TIMEOUT)
-    try:
-        if method.upper() == "POST":
-            async with session.post(
-                url, headers=merged_headers, json=json_body, timeout=timeout
-            ) as resp:
-                resp.raise_for_status()
-                return await resp.json(content_type=None)
-        else:
-            async with session.get(
-                url, headers=merged_headers, timeout=timeout
-            ) as resp:
-                resp.raise_for_status()
-                return await resp.json(content_type=None)
-    except asyncio.TimeoutError:
-        log.warning("    TIMEOUT fetching %s", url)
-    except aiohttp.ClientResponseError as exc:
-        log.warning("    HTTP %s fetching %s — %s", exc.status, url, exc.message)
-    except Exception as exc:  # noqa: BLE001
-        log.warning("    ERROR fetching %s — %s", url, exc)
+    
+    for attempt in range(max_retries):
+        try:
+            if method.upper() == "POST":
+                async with session.post(
+                    url, headers=merged_headers, json=json_body, timeout=timeout
+                ) as resp:
+                    if resp.status == 429:
+                        log.warning("    HTTP 429 fetching %s (Attempt %d/%d) — Retrying...", url, attempt + 1, max_retries)
+                        await asyncio.sleep(2 ** attempt)
+                        continue
+                    resp.raise_for_status()
+                    return await resp.json(content_type=None)
+            else:
+                async with session.get(
+                    url, headers=merged_headers, timeout=timeout
+                ) as resp:
+                    if resp.status == 429:
+                        log.warning("    HTTP 429 fetching %s (Attempt %d/%d) — Retrying...", url, attempt + 1, max_retries)
+                        await asyncio.sleep(2 ** attempt)
+                        continue
+                    resp.raise_for_status()
+                    return await resp.json(content_type=None)
+        except asyncio.TimeoutError:
+            log.warning("    TIMEOUT fetching %s", url)
+            return {}
+        except aiohttp.ClientResponseError as exc:
+            log.warning("    HTTP %s fetching %s — %s", exc.status, url, exc.message)
+            return {}
+        except Exception as exc:  # noqa: BLE001
+            log.warning("    ERROR fetching %s — %s", url, exc)
+            return {}
+            
     return {}
 
 def _safe_int(value, default: int = 0) -> int:

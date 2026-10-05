@@ -112,6 +112,7 @@ async def sync_member_async(supabase_client, session: aiohttp.ClientSession, mem
     snapshot = {
         "member_id": member_id,
         "snapshot_date": today,
+        "raw_github_commits": 0, "valid_github_commits": 0,
         "github_contributions": 0, "github_repos": 0, "github_prs": 0, "github_issues": 0,
         "codeforces_rating": 0, "codeforces_solved": 0, "codeforces_max_rating": 0, "codeforces_rank_title": "Unrated",
         "leetcode_easy": 0, "leetcode_medium": 0, "leetcode_hard": 0, "leetcode_total": 0,
@@ -151,87 +152,8 @@ async def sync_member_async(supabase_client, session: aiohttp.ClientSession, mem
     _cc_topics = {}; _gfg_topics = {}; _hr_topics = {}; _lc_summary = {}
     _cf_contests = 0; _lc_contests = 0; _cc_contests = 0
 
-    if gh_handle and gh_data:
-        snapshot.update({
-            "github_contributions": gh_data.get("github_contributions", 0),
-            "github_repos": gh_data.get("github_repos", 0),
-            "github_prs": gh_data.get("github_prs", 0),
-            "github_issues": gh_data.get("github_issues", 0),
-        })
-
-    if cf_handle and cf_data:
-        snapshot.update({
-            "codeforces_rating": cf_data.get("codeforces_rating", 0),
-            "codeforces_max_rating": cf_data.get("codeforces_max_rating", 0),
-            "codeforces_rank_title": cf_data.get("codeforces_rank_title", "Unrated"),
-            "codeforces_solved": cf_data.get("codeforces_solved", 0),
-            "codeforces_contests": cf_data.get("cf_contests_attended", 0)
-        })
-        _cf_contests = cf_data.get("cf_contests_attended", 0)
-
-    if lc_handle and lc_data:
-        snapshot.update({
-            "leetcode_easy": lc_data.get("leetcode_easy", 0),
-            "leetcode_medium": lc_data.get("leetcode_medium", 0),
-            "leetcode_hard": lc_data.get("leetcode_hard", 0),
-            "leetcode_total": lc_data.get("leetcode_total", 0),
-            "leetcode_rating": lc_data.get("leetcode_rating", 0),
-            "leetcode_max_rating": lc_data.get("leetcode_max_rating", 0),
-            "leetcode_contests": lc_data.get("lc_contests_attended", 0)
-        })
-        _lc_contests = lc_data.get("lc_contests_attended", 0)
-        _lc_badge_name = lc_data.get("lc_badge_name", "")
-        _lc_badges_list = lc_data.get("_lc_badges_list", [])
-        _lc_summary = lc_data.get("_lc_summary", {})
-
-    if cc_handle and cc_data:
-        snapshot.update({
-            "codechef_rating": cc_data.get("codechef_rating", 0),
-            "codechef_max_rating": cc_data.get("codechef_max_rating", 0),
-            "codechef_solved": cc_data.get("codechef_solved", 0),
-            "codechef_contests": cc_data.get("cc_contests_attended", 0)
-        })
-        _cc_topics = cc_data.get("cc_topics", {})
-        _cc_contests = cc_data.get("cc_contests_attended", 0)
-        snapshot["active_days"] += cc_data.get("cc_active_days", 0)
-        snapshot["total_submissions"] += cc_data.get("cc_total_submissions", 0)
-
-    if gfg_handle and gfg_data:
-        snapshot.update({
-            "gfg_solved": gfg_data.get("gfg_solved", 0),
-            "gfg_score": gfg_data.get("gfg_score", 0),
-            "gfg_school": gfg_data.get("gfg_school", 0),
-            "gfg_basic": gfg_data.get("gfg_basic", 0),
-            "gfg_easy": gfg_data.get("gfg_easy", 0),
-            "gfg_medium": gfg_data.get("gfg_medium", 0),
-            "gfg_hard": gfg_data.get("gfg_hard", 0),
-        })
-        _gfg_topics = gfg_data.get("gfg_topics", {})
-        snapshot["active_days"] += gfg_data.get("gfg_active_days", 0)
-        snapshot["total_submissions"] += gfg_data.get("gfg_total_submissions", 0)
-
-    if hr_handle and hr_data:
-        snapshot["hackerrank_badges"] = hr_data.get("hackerrank_badges", 0)
-        _hr_badges_list = hr_data.get("hr_badges_list", [])
-        _hr_topics = hr_data.get("hr_topics", {})
-
-    if tuf_handle and tuf_data:
-        snapshot.update({
-            "tuf_solved": tuf_data.get("tuf_solved", 0),
-            "tuf_easy": tuf_data.get("tuf_easy", 0),
-            "tuf_medium": tuf_data.get("tuf_medium", 0),
-            "tuf_hard": tuf_data.get("tuf_hard", 0),
-        })
-
-    snapshot["contests_attended"] = _cf_contests + _lc_contests + _cc_contests
-    snapshot["topic_stats"] = build_topic_stats(_lc_summary, _cc_topics, _gfg_topics, _hr_topics)
-    snapshot["badges_detail"] = build_badges_detail(_lc_badges_list, _lc_badge_name, _hr_badges_list)
-
-    # -----------------------------------------------------------------------
-    # Global CODEX Streak Logic
-    # -----------------------------------------------------------------------
-    from datetime import datetime, timedelta
     from db import get_recent_snapshots
+    from datetime import datetime, timedelta
     
     today_date = datetime.strptime(today, "%Y-%m-%d").date()
     yesterday_str = (today_date - timedelta(days=1)).strftime("%Y-%m-%d")
@@ -239,6 +161,189 @@ async def sync_member_async(supabase_client, session: aiohttp.ClientSession, mem
     recent_snapshots = get_recent_snapshots(supabase_client, member_id, today, limit=2)
     yesterday_snap = recent_snapshots[0] if len(recent_snapshots) > 0 else None
     day_before_snap = recent_snapshots[1] if len(recent_snapshots) > 1 else None
+
+    if gh_handle and gh_data:
+        gh_commits = gh_data.get("github_contributions", 0)
+        if yesterday_snap and gh_commits < yesterday_snap.get("raw_github_commits", 0):
+            snapshot.update({
+                "github_contributions": yesterday_snap.get("raw_github_commits", 0),
+                "github_repos": yesterday_snap.get("github_repos", 0),
+                "github_prs": yesterday_snap.get("github_prs", 0),
+                "github_issues": yesterday_snap.get("github_issues", 0),
+            })
+        else:
+            snapshot.update({
+                "github_contributions": gh_commits,
+                "github_repos": gh_data.get("github_repos", 0),
+                "github_prs": gh_data.get("github_prs", 0),
+                "github_issues": gh_data.get("github_issues", 0),
+            })
+
+    if cf_handle and cf_data:
+        cf_solved = cf_data.get("codeforces_solved", 0)
+        if yesterday_snap and cf_solved < yesterday_snap.get("codeforces_solved", 0):
+            snapshot.update({
+                "codeforces_rating": yesterday_snap.get("codeforces_rating", 0),
+                "codeforces_max_rating": yesterday_snap.get("codeforces_max_rating", 0),
+                "codeforces_rank_title": yesterday_snap.get("codeforces_rank_title", "Unrated"),
+                "codeforces_solved": yesterday_snap.get("codeforces_solved", 0),
+                "codeforces_contests": yesterday_snap.get("codeforces_contests", 0)
+            })
+            _cf_contests = yesterday_snap.get("codeforces_contests", 0)
+        else:
+            snapshot.update({
+                "codeforces_rating": cf_data.get("codeforces_rating", 0),
+                "codeforces_max_rating": cf_data.get("codeforces_max_rating", 0),
+                "codeforces_rank_title": cf_data.get("codeforces_rank_title", "Unrated"),
+                "codeforces_solved": cf_solved,
+                "codeforces_contests": cf_data.get("cf_contests_attended", 0)
+            })
+            _cf_contests = cf_data.get("cf_contests_attended", 0)
+
+    if lc_handle and lc_data:
+        lc_total = lc_data.get("leetcode_total", 0)
+        if yesterday_snap and lc_total < yesterday_snap.get("leetcode_total", 0):
+            snapshot.update({
+                "leetcode_easy": yesterday_snap.get("leetcode_easy", 0),
+                "leetcode_medium": yesterday_snap.get("leetcode_medium", 0),
+                "leetcode_hard": yesterday_snap.get("leetcode_hard", 0),
+                "leetcode_total": yesterday_snap.get("leetcode_total", 0),
+                "leetcode_rating": yesterday_snap.get("leetcode_rating", 0),
+                "leetcode_max_rating": yesterday_snap.get("leetcode_max_rating", 0),
+                "leetcode_contests": yesterday_snap.get("leetcode_contests", 0)
+            })
+            _lc_contests = yesterday_snap.get("leetcode_contests", 0)
+            # Topic stats and badges will reset to empty for this snapshot unless we do a deep merge, 
+            # but primary metrics are saved.
+        else:
+            snapshot.update({
+                "leetcode_easy": lc_data.get("leetcode_easy", 0),
+                "leetcode_medium": lc_data.get("leetcode_medium", 0),
+                "leetcode_hard": lc_data.get("leetcode_hard", 0),
+                "leetcode_total": lc_total,
+                "leetcode_rating": lc_data.get("leetcode_rating", 0),
+                "leetcode_max_rating": lc_data.get("leetcode_max_rating", 0),
+                "leetcode_contests": lc_data.get("lc_contests_attended", 0)
+            })
+            _lc_contests = lc_data.get("lc_contests_attended", 0)
+            _lc_badge_name = lc_data.get("lc_badge_name", "")
+            _lc_badges_list = lc_data.get("_lc_badges_list", [])
+            _lc_summary = lc_data.get("_lc_summary", {})
+
+    if cc_handle and cc_data:
+        cc_solved = cc_data.get("codechef_solved", 0)
+        if yesterday_snap and cc_solved < yesterday_snap.get("codechef_solved", 0):
+            snapshot.update({
+                "codechef_rating": yesterday_snap.get("codechef_rating", 0),
+                "codechef_max_rating": yesterday_snap.get("codechef_max_rating", 0),
+                "codechef_solved": yesterday_snap.get("codechef_solved", 0),
+                "codechef_contests": yesterday_snap.get("codechef_contests", 0)
+            })
+            _cc_contests = yesterday_snap.get("codechef_contests", 0)
+            # No active days delta since fetch failed
+        else:
+            snapshot.update({
+                "codechef_rating": cc_data.get("codechef_rating", 0),
+                "codechef_max_rating": cc_data.get("codechef_max_rating", 0),
+                "codechef_solved": cc_solved,
+                "codechef_contests": cc_data.get("cc_contests_attended", 0)
+            })
+            _cc_topics = cc_data.get("cc_topics", {})
+            _cc_contests = cc_data.get("cc_contests_attended", 0)
+            snapshot["active_days"] += cc_data.get("cc_active_days", 0)
+            snapshot["total_submissions"] += cc_data.get("cc_total_submissions", 0)
+
+    if gfg_handle and gfg_data:
+        gfg_solved = gfg_data.get("gfg_solved", 0)
+        if yesterday_snap and gfg_solved < yesterday_snap.get("gfg_solved", 0):
+            snapshot.update({
+                "gfg_solved": yesterday_snap.get("gfg_solved", 0),
+                "gfg_score": yesterday_snap.get("gfg_score", 0),
+                "gfg_school": yesterday_snap.get("gfg_school", 0),
+                "gfg_basic": yesterday_snap.get("gfg_basic", 0),
+                "gfg_easy": yesterday_snap.get("gfg_easy", 0),
+                "gfg_medium": yesterday_snap.get("gfg_medium", 0),
+                "gfg_hard": yesterday_snap.get("gfg_hard", 0),
+            })
+        else:
+            snapshot.update({
+                "gfg_solved": gfg_solved,
+                "gfg_score": gfg_data.get("gfg_score", 0),
+                "gfg_school": gfg_data.get("gfg_school", 0),
+                "gfg_basic": gfg_data.get("gfg_basic", 0),
+                "gfg_easy": gfg_data.get("gfg_easy", 0),
+                "gfg_medium": gfg_data.get("gfg_medium", 0),
+                "gfg_hard": gfg_data.get("gfg_hard", 0),
+            })
+            _gfg_topics = gfg_data.get("gfg_topics", {})
+            snapshot["active_days"] += gfg_data.get("gfg_active_days", 0)
+            snapshot["total_submissions"] += gfg_data.get("gfg_total_submissions", 0)
+
+    if hr_handle and hr_data:
+        hr_badges = hr_data.get("hackerrank_badges", 0)
+        if yesterday_snap and hr_badges < yesterday_snap.get("hackerrank_badges", 0):
+            snapshot["hackerrank_badges"] = yesterday_snap.get("hackerrank_badges", 0)
+        else:
+            snapshot["hackerrank_badges"] = hr_badges
+            _hr_badges_list = hr_data.get("hr_badges_list", [])
+            _hr_topics = hr_data.get("hr_topics", {})
+
+    if tuf_handle and tuf_data:
+        tuf_solved = tuf_data.get("tuf_solved", 0)
+        if yesterday_snap and tuf_solved < yesterday_snap.get("tuf_solved", 0):
+            snapshot.update({
+                "tuf_solved": yesterday_snap.get("tuf_solved", 0),
+                "tuf_easy": yesterday_snap.get("tuf_easy", 0),
+                "tuf_medium": yesterday_snap.get("tuf_medium", 0),
+                "tuf_hard": yesterday_snap.get("tuf_hard", 0),
+            })
+        else:
+            snapshot.update({
+                "tuf_solved": tuf_solved,
+                "tuf_easy": tuf_data.get("tuf_easy", 0),
+                "tuf_medium": tuf_data.get("tuf_medium", 0),
+                "tuf_hard": tuf_data.get("tuf_hard", 0),
+            })
+
+    snapshot["contests_attended"] = _cf_contests + _lc_contests + _cc_contests
+    
+    # Merge old topics/badges to prevent resetting if any API failed
+    new_topic_stats = build_topic_stats(_lc_summary, _cc_topics, _gfg_topics, _hr_topics)
+    new_badges_detail = build_badges_detail(_lc_badges_list, _lc_badge_name, _hr_badges_list)
+    
+    if yesterday_snap:
+        old_topic_stats = yesterday_snap.get("topic_stats") or {}
+        old_badges_detail = yesterday_snap.get("badges_detail") or []
+        
+        # Merge topics: if new is empty but old exists, keep old
+        for platform in ["leetcode", "codechef", "gfg", "hackerrank"]:
+            if not new_topic_stats.get(platform) and old_topic_stats.get(platform):
+                new_topic_stats[platform] = old_topic_stats[platform]
+                
+        # Merge badges: if new is empty but old exists, keep old
+        if not new_badges_detail and old_badges_detail:
+            new_badges_detail = old_badges_detail
+            
+    snapshot["topic_stats"] = new_topic_stats
+    snapshot["badges_detail"] = new_badges_detail
+
+    # Anti-spam commit delta calculation
+    today_raw = snapshot.get("github_contributions", 0)
+    
+    if yesterday_snap:
+        # Fallback for migration: if raw_github_commits is 0, use old github_contributions
+        yesterday_raw = yesterday_snap.get("raw_github_commits") or yesterday_snap.get("github_contributions", 0)
+        yesterday_valid = yesterday_snap.get("valid_github_commits") or yesterday_snap.get("github_contributions", 0)
+    else:
+        # First time user: initialize baseline without capping entire history
+        yesterday_raw = today_raw
+        yesterday_valid = today_raw
+
+    daily_commits = max(0, today_raw - yesterday_raw)
+    capped_daily_commits = min(15, daily_commits)
+
+    snapshot["raw_github_commits"] = today_raw
+    snapshot["valid_github_commits"] = yesterday_valid + capped_daily_commits
 
     if yesterday_snap and yesterday_snap.get("snapshot_date") == yesterday_str:
         yesterday_total = calculate_total_activity(yesterday_snap)

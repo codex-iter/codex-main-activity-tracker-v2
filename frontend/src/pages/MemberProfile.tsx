@@ -1,4 +1,5 @@
 
+import { useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ScrollReveal, StaggerContainer, StaggerItem } from "../components/animations/ScrollReveal";
 import SEO from "../components/SEO";
@@ -16,6 +17,11 @@ import { TopicBreakdown } from "../components/profile/TopicBreakdown";
 
 export default function MemberProfile() {
   const { handle = "" } = useParams<{ handle: string }>();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [handle]);
+
   const {
     profile,
     latestSnapshot,

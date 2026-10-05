@@ -5,6 +5,9 @@ import type { ClubStatsSummary, ActivityDay } from "../services/codexApi";
 export interface LeaderboardMember {
   id: string;
   rank: number;
+  globalRank: number;
+  dsaRank: number;
+  devRank: number;
   handle: string;
   full_name: string;
   avatar_url: string | null;
@@ -14,10 +17,12 @@ export interface LeaderboardMember {
   daily_score_delta: number;
   current_streak: number;
   leetcode_total: number;
+  total_solved: number;
+  total_contributions: number;
   tuf_handle: string | null;
   tuf_solved: number;
   contests_attended: number;
-  github_contributions: number;
+  valid_github_commits: number;
   codeforces_rating: number;
   codechef_rating: number;
   hackerrank_badges: number;
@@ -49,26 +54,54 @@ export function useLeaderboard() {
         ]);
 
         if (!cancelled) {
-          const mappedMembers: LeaderboardMember[] = lbData.map((entry, index) => ({
-            id: entry.id,
-            rank: index + 1, // original rank by score
-            handle: entry.members.github_handle ?? "",
-            full_name: entry.members.full_name ?? "—",
-            avatar_url: entry.members.avatar_url,
-            total_score: entry.total_score,
-            dsa_score: entry.dsa_score,
-            dev_score: entry.dev_score,
-            daily_score_delta: 0, // placeholder, would need previous snapshot for delta
-            current_streak: entry.current_streak,
-            leetcode_total: entry.leetcode_total,
-            tuf_handle: entry.members.tuf_handle,
-            tuf_solved: entry.tuf_solved || 0,
-            contests_attended: entry.contests_attended,
-            github_contributions: entry.github_contributions,
-            codeforces_rating: entry.codeforces_rating,
-            codechef_rating: entry.codechef_rating,
-            hackerrank_badges: entry.hackerrank_badges,
-          }));
+          // Compute rank for each category independently
+          const globalSorted = [...lbData].sort((a, b) => (b.total_score || 0) - (a.total_score || 0));
+          const globalRankMap = new Map(globalSorted.map((item, idx) => [item.id, idx + 1]));
+
+          const dsaSorted = [...lbData].sort((a, b) => (b.dsa_score || 0) - (a.dsa_score || 0));
+          const dsaRankMap = new Map(dsaSorted.map((item, idx) => [item.id, idx + 1]));
+
+          const devSorted = [...lbData].sort((a, b) => (b.dev_score || 0) - (a.dev_score || 0));
+          const devRankMap = new Map(devSorted.map((item, idx) => [item.id, idx + 1]));
+
+          const mappedMembers: LeaderboardMember[] = lbData.map((entry) => {
+            const calculatedTotalSolved = 
+              (entry.leetcode_total || 0) + 
+              (entry.codeforces_solved || 0) + 
+              (entry.codechef_solved || 0) + 
+              (entry.gfg_solved || 0) + 
+              (entry.tuf_solved || 0);
+
+            const calculatedContributions = 
+              (entry.github_contributions || 0) || 
+              (entry.valid_github_commits || 0);
+
+            return {
+              id: entry.id,
+              rank: globalRankMap.get(entry.id) || 1, // Default global rank
+              globalRank: globalRankMap.get(entry.id) || 1,
+              dsaRank: dsaRankMap.get(entry.id) || 1,
+              devRank: devRankMap.get(entry.id) || 1,
+              handle: entry.members.github_handle ?? "",
+              full_name: entry.members.full_name ?? "—",
+              avatar_url: entry.members.avatar_url,
+              total_score: entry.total_score,
+              dsa_score: entry.dsa_score,
+              dev_score: entry.dev_score,
+              daily_score_delta: 0,
+              current_streak: entry.current_streak,
+              leetcode_total: entry.leetcode_total,
+              total_solved: calculatedTotalSolved,
+              total_contributions: calculatedContributions,
+              tuf_handle: entry.members.tuf_handle,
+              tuf_solved: entry.tuf_solved || 0,
+              contests_attended: entry.contests_attended,
+              valid_github_commits: entry.valid_github_commits,
+              codeforces_rating: entry.codeforces_rating,
+              codechef_rating: entry.codechef_rating,
+              hackerrank_badges: entry.hackerrank_badges,
+            };
+          });
 
           setRawMembers(mappedMembers);
           setClubSummary(statsData);
@@ -88,26 +121,39 @@ export function useLeaderboard() {
   }, []);
 
   const members = useMemo(() => {
-    let filtered = rawMembers;
+    // 1. First assign active category rank and sort score by active sortMode
+    const membersWithCategoryRank = rawMembers.map((m) => {
+      let activeRank = m.globalRank;
+      let activeScore = m.total_score;
 
+      if (sortMode === "DSA") {
+        activeRank = m.dsaRank;
+        activeScore = m.dsa_score;
+      } else if (sortMode === "DEV") {
+        activeRank = m.devRank;
+        activeScore = m.dev_score;
+      }
+
+      return {
+        ...m,
+        rank: activeRank,
+        activeScore,
+      };
+    });
+
+    // 2. Sort full list by active category score descending
+    const sorted = membersWithCategoryRank.sort((a, b) => b.activeScore - a.activeScore);
+
+    // 3. Filter by search query while maintaining assigned category rank
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      filtered = filtered.filter(m => 
+      return sorted.filter(m => 
         m.full_name.toLowerCase().includes(q) || 
         m.handle.toLowerCase().includes(q)
       );
     }
 
-    const sorted = filtered.sort((a, b) => {
-      if (sortMode === "DSA") return (b.dsa_score || 0) - (a.dsa_score || 0);
-      if (sortMode === "DEV") return (b.dev_score || 0) - (a.dev_score || 0);
-      return (b.total_score || 0) - (a.total_score || 0); // GLOBAL default
-    });
-
-    return sorted.map((member, index) => ({
-      ...member,
-      rank: index + 1
-    }));
+    return sorted;
   }, [rawMembers, searchQuery, sortMode]);
 
   return {

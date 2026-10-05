@@ -60,10 +60,13 @@ async def fetch_codeforces(session: aiohttp.ClientSession, handle: str) -> dict:
       codeforces_solved, cf_contests_attended
     }
     """
+    import urllib.parse
+    encoded_handle = urllib.parse.quote(handle)
+    
     info_data, status_data, rating_data = await asyncio.gather(
-        make_cf_request(session, f"https://codeforces.com/api/user.info?handles={handle}"),
-        make_cf_request(session, f"https://codeforces.com/api/user.status?handle={handle}"),
-        make_cf_request(session, f"https://codeforces.com/api/user.rating?handle={handle}"),
+        make_cf_request(session, f"https://codeforces.com/api/user.info?handles={encoded_handle}"),
+        make_cf_request(session, f"https://codeforces.com/api/user.status?handle={encoded_handle}"),
+        make_cf_request(session, f"https://codeforces.com/api/user.rating?handle={encoded_handle}"),
     )
 
     # 1. Profile info

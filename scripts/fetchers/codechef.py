@@ -5,6 +5,8 @@ from .utils import safe_fetch, _safe_int
 
 log = logging.getLogger(__name__)
 
+cc_semaphore = asyncio.Semaphore(1)
+
 async def fetch_codechef(session: aiohttp.ClientSession, handle: str) -> dict:
     """
     Fetches CodeChef metrics across four endpoints concurrently. All data inside `data: {}`.
@@ -20,14 +22,21 @@ async def fetch_codechef(session: aiohttp.ClientSession, handle: str) -> dict:
       cc_contests_attended, cc_topics
     }
     """
-    BASE = f"https://codechef-stats.tashif.codes/{handle}"
+    import urllib.parse
+    encoded_handle = urllib.parse.quote(handle)
+    BASE = f"https://codechef-stats.tashif.codes/{encoded_handle}"
 
-    profile_resp, heatmap_resp, contests_resp, stats_resp = await asyncio.gather(
-        safe_fetch(session, BASE),
-        safe_fetch(session, f"{BASE}/heatmap"),
-        safe_fetch(session, f"{BASE}/contests"),
-        safe_fetch(session, f"{BASE}/stats"),
-    )
+    async with cc_semaphore:
+        try:
+            profile_resp = await safe_fetch(session, BASE)
+            await asyncio.sleep(0.5)
+            heatmap_resp = await safe_fetch(session, f"{BASE}/heatmap")
+            await asyncio.sleep(0.5)
+            contests_resp = await safe_fetch(session, f"{BASE}/contests")
+            await asyncio.sleep(0.5)
+            stats_resp = await safe_fetch(session, f"{BASE}/stats")
+        finally:
+            await asyncio.sleep(1.0)
 
     # 1. Profile summary
     profile = profile_resp.get("data") or {}

@@ -5,33 +5,27 @@ from .utils import safe_fetch, _safe_int
 
 log = logging.getLogger(__name__)
 
+gfg_semaphore = asyncio.Semaphore(2)
+
 async def fetch_gfg(session: aiohttp.ClientSession, handle: str) -> dict:
     """
     Fetches GFG metrics across four endpoints concurrently. All data inside `data: {}`.
-
-    1. GET /{handle}          -> data.totalSolved  (top-level totalProblemsSolved as fallback)
-    2. GET /{handle}/heatmap  -> data.{ totalSubmissions, currentStreak, longestStreak, totalActiveDays }
-    3. GET /{handle}/stats    -> data.{
-           byDifficulty: { school, basic, easy, medium, hard },
-           topicAnalysis: [{topic, count}]
-         }
-    4. GET /{handle}/rating   -> data.{ current (max rating if available) }
-
-    Returns: {
-      gfg_solved, gfg_score,
-      gfg_school, gfg_basic, gfg_easy, gfg_medium, gfg_hard,
-      gfg_active_days, gfg_total_submissions, gfg_current_streak, gfg_max_streak,
-      gfg_max_rating, gfg_topics
-    }
+    ...
     """
-    BASE = f"https://gfg-stats.tashif.codes/{handle}"
+    import urllib.parse
+    encoded_handle = urllib.parse.quote(handle)
+    BASE = f"https://gfg-stats.tashif.codes/{encoded_handle}"
 
-    summary_payload, heatmap_resp, stats_resp, rating_resp = await asyncio.gather(
-        safe_fetch(session, BASE),
-        safe_fetch(session, f"{BASE}/heatmap"),
-        safe_fetch(session, f"{BASE}/stats"),
-        safe_fetch(session, f"{BASE}/rating"),
-    )
+    async with gfg_semaphore:
+        try:
+            summary_payload, heatmap_resp, stats_resp, rating_resp = await asyncio.gather(
+                safe_fetch(session, BASE),
+                safe_fetch(session, f"{BASE}/heatmap"),
+                safe_fetch(session, f"{BASE}/stats"),
+                safe_fetch(session, f"{BASE}/rating"),
+            )
+        finally:
+            await asyncio.sleep(1.0)
 
     # 1. Summary
     summary_data = summary_payload.get("data") or {}

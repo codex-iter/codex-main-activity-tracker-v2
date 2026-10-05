@@ -56,9 +56,11 @@ async def fetch_tuf(session: aiohttp.ClientSession, handle: str) -> dict:
       tuf_solved, tuf_easy, tuf_medium, tuf_hard
     }
     """
+    import urllib.parse
+    encoded_handle = urllib.parse.quote(handle)
     profile_data, stats_data = await asyncio.gather(
-        make_tuf_request(session, f"https://tuf-stats.tashif.codes/{handle}/profile"),
-        make_tuf_request(session, f"https://tuf-stats.tashif.codes/{handle}/stats"),
+        make_tuf_request(session, f"https://tuf-stats.tashif.codes/{encoded_handle}/profile"),
+        make_tuf_request(session, f"https://tuf-stats.tashif.codes/{encoded_handle}/stats"),
     )
 
     tuf_solved = 0
