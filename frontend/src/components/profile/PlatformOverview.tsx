@@ -63,6 +63,7 @@ export function PlatformOverview({ profile, stats }: PlatformOverviewProps) {
     { key: "gfg", label: "GeeksForGeeks", count: gfg, color: "#22c55e", hoverColor: "#4ade80" },
     { key: "cf", label: "Codeforces", count: cf, color: "#ef4444", hoverColor: "#f87171" },
     { key: "cc", label: "CodeChef", count: cc, color: "#a855f7", hoverColor: "#c084fc" },
+    { key: "tuf", label: "takeUforward", count: tuf, color: "#0707f2", hoverColor: "#3b82f6" },
   ].filter((s) => s.count > 0);
 
   let currentAngle = 0;

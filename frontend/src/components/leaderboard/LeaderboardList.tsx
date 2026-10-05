@@ -21,7 +21,7 @@ export default function LeaderboardList({ members, sortMode = 'GLOBAL' }: Leader
   const metricLabel = sortMode === 'DEV' ? 'Contributions' : 'Questions';
 
   return (
-    <div className="w-full max-w-5xl mx-auto mt-6 sm:mt-8 bg-white border-2 sm:border-4 border-slate-900 rounded-none p-3 sm:p-6 brutalist-shadow relative z-10 transition-all overflow-hidden">
+    <div className="w-full max-w-5xl mx-auto mt-6 sm:mt-8 bg-white border-2 sm:border-4 border-slate-900 rounded-none p-3 sm:p-6 brutalist-shadow relative z-10 transition-all overflow-visible">
       
       {/* Table Header (Hidden on small mobile, visible on tablet+) */}
       <div className="hidden sm:grid sm:grid-cols-[1fr_80px_100px_120px_100px] gap-4 mb-4 pb-4 border-b-4 border-slate-900 text-xs sm:text-sm font-black uppercase tracking-widest text-slate-900 px-4">
@@ -50,7 +50,7 @@ export default function LeaderboardList({ members, sortMode = 'GLOBAL' }: Leader
               >
                 
                 {/* Desktop Scorecard Tooltip on Hover */}
-                <div className="absolute right-2 md:right-[5%] -top-20 md:-top-28 hidden md:flex opacity-0 group-hover:opacity-100 group-hover:-translate-y-2 pointer-events-none scale-95 group-hover:scale-100 transition-all duration-200 z-[100] bg-white border-4 border-slate-900 brutalist-shadow flex-col p-4 w-72 text-left">
+                <div className="absolute right-2 md:right-12 -top-24 md:-top-28 hidden md:flex opacity-0 group-hover:opacity-100 group-hover:-translate-y-2 pointer-events-none scale-95 group-hover:scale-100 transition-all duration-200 z-[999] bg-white border-4 border-slate-900 brutalist-shadow flex-col p-4 w-72 text-left">
                   <div className="flex items-center gap-3 border-b-2 border-slate-200 pb-2 mb-2">
                     <div className="w-10 h-10 border-2 border-slate-900 bg-slate-100 flex items-center justify-center font-black text-slate-900 overflow-hidden">
                        {member.avatar_url ? (

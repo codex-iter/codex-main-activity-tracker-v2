@@ -36,11 +36,11 @@ export default function LeaderboardPodium({ members, sortMode = 'GLOBAL' }: Lead
     },
     2: {
       // SILVER
-      height: "h-44 md:h-52",
+      height: "h-48 md:h-56",
       topBg: "bg-gradient-to-r from-slate-200 via-slate-300 to-slate-400",
       frontBg: "bg-white",
       borderColor: "border-slate-900",
-      accentBg: "bg-slate-200",
+      accentBg: "bg-slate-300",
       accentTextColor: "text-slate-900",
       badgeColor: "bg-slate-300 text-slate-900 border-2 border-slate-900",
       trophyIcon: "🥈",
@@ -51,7 +51,7 @@ export default function LeaderboardPodium({ members, sortMode = 'GLOBAL' }: Lead
     },
     3: {
       // BRONZE
-      height: "h-36 md:h-44",
+      height: "h-44 md:h-52",
       topBg: "bg-gradient-to-r from-amber-600 via-amber-700 to-orange-800",
       frontBg: "bg-white",
       borderColor: "border-slate-900",
@@ -179,32 +179,32 @@ export default function LeaderboardPodium({ members, sortMode = 'GLOBAL' }: Lead
 
                 {/* 3D Front Face (White Main Body) */}
                 <div
-                  className={`w-full ${config.height} ${config.frontBg} border-b-2 sm:border-b-4 border-l-2 sm:border-l-4 border-r-2 sm:border-r-4 border-slate-900 p-1.5 sm:p-4 flex flex-col items-center justify-between text-slate-900 relative z-10 ${config.shadow}`}
+                  className={`w-full ${config.height} ${config.frontBg} border-b-2 sm:border-b-4 border-l-2 sm:border-l-4 border-r-2 sm:border-r-4 border-slate-900 p-1.5 sm:p-3 md:p-4 flex flex-col items-center justify-between text-slate-900 relative z-10 ${config.shadow}`}
                 >
                   {/* Subtle Diagonal Stripe Accent */}
                   <div className="absolute top-0 left-0 right-0 h-1.5 sm:h-2" style={{ backgroundColor: rank === 1 ? "#FACC15" : rank === 2 ? "#94A3B8" : "#D97706" }} />
 
                   {/* Trophy Badge */}
                   <div
-                    className={`w-7 h-7 sm:w-11 sm:h-11 ${config.badgeColor} font-black text-xs sm:text-xl flex items-center justify-center brutalist-shadow-sm mt-0.5 sm:mt-2 relative z-10`}
+                    className={`w-7 h-7 sm:w-10 sm:h-10 md:w-11 md:h-11 ${config.badgeColor} font-black text-xs sm:text-lg md:text-xl flex items-center justify-center brutalist-shadow-sm mt-0.5 sm:mt-1 relative z-10 flex-shrink-0`}
                   >
                     {config.trophyIcon}
                   </div>
 
                   {/* Rank Title Label */}
                   <div
-                    className="text-[8px] sm:text-xs font-black uppercase tracking-widest px-1 sm:px-2.5 py-0.5 border border-slate-900 mt-1 sm:mt-3 brutalist-shadow-sm truncate max-w-full"
-                    style={{ backgroundColor: rank === 1 ? "#FACC15" : rank === 2 ? "#E2E8F0" : "#FDE68A", color: "#0f172a" }}
+                    className="text-[8px] sm:text-[10px] md:text-xs font-black uppercase tracking-widest px-1 sm:px-2 py-0.5 border border-slate-900 mt-0.5 sm:mt-1 brutalist-shadow-sm truncate max-w-full text-center flex-shrink-0"
+                    style={{ backgroundColor: rank === 1 ? "#FACC15" : rank === 2 ? "#E2E8F0" : "#F59E0B", color: rank === 3 ? "#000000" : "#0f172a" }}
                   >
                     {config.rankLabel}
                   </div>
 
                   {/* Middle XP / Score Display */}
-                  <div className="text-center my-auto z-10 w-full px-0.5">
+                  <div className="text-center my-1 sm:my-auto z-10 w-full px-0.5">
                     <div className="text-[8px] sm:text-[10px] font-mono font-bold tracking-widest text-slate-500 uppercase mb-0.5">
                       {sortMode} XP
                     </div>
-                    <div className="text-sm sm:text-2xl md:text-3xl font-black leading-none tracking-tight text-slate-900">
+                    <div className="text-xs sm:text-xl md:text-3xl font-black leading-none tracking-tight text-slate-900">
                       {displayScore.toLocaleString()}
                     </div>
                   </div>
