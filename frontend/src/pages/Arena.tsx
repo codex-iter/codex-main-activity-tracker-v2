@@ -264,9 +264,9 @@ export default function Arena() {
           </ScrollReveal>
         )}
 
-        {/* ── Category Filters ── */}
+        {/* ── Category Filters & Scroll Anchor ── */}
         <ScrollReveal delay={0.05} className="mb-8 flex justify-center">
-          <div className="grid grid-cols-3 border-4 border-slate-900 bg-white brutalist-shadow w-full max-w-lg">
+          <div id="leaderboard-table" className="grid grid-cols-3 border-4 border-slate-900 bg-white brutalist-shadow w-full max-w-lg scroll-mt-24">
             {(["ALL", "DSA", "DEV"] as const).map((cat) => (
               <button
                 key={cat}
@@ -508,23 +508,24 @@ export default function Arena() {
       {/* ── RANK MECHANISM MODAL OVERLAY ── */}
       <AnimatePresence>
         {isRankModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-6 pt-6 sm:pt-12 bg-slate-900/80 backdrop-blur-sm overflow-y-auto">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: -10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: -10 }}
-              className="bg-white border-4 border-slate-900 brutalist-shadow max-w-2xl w-full max-h-[85vh] overflow-y-auto p-6 sm:p-8 relative font-display text-slate-900 my-auto sm:my-0"
+          <div className="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-6 pt-4 sm:pt-10 pb-12 bg-slate-900/85 backdrop-blur-sm overflow-y-auto">
+            {/* Persistent Floating Close Button Outside Modal Box */}
+            <button
+              onClick={() => setIsRankModalOpen(false)}
+              className="fixed top-3 right-3 sm:top-6 sm:right-6 bg-red-600 hover:bg-slate-900 text-white font-mono font-black text-base sm:text-lg px-3 py-1.5 sm:px-4 sm:py-2 border-2 sm:border-4 border-slate-900 brutalist-shadow z-50 flex items-center gap-1.5 cursor-pointer active:translate-y-0.5"
             >
-              {/* Close Button */}
-              <button
-                onClick={() => setIsRankModalOpen(false)}
-                className="absolute top-4 right-4 bg-slate-900 text-white font-mono font-black text-sm w-8 h-8 flex items-center justify-center border-2 border-slate-900 hover:bg-red-600 transition-colors cursor-pointer"
-              >
-                ✕
-              </button>
+              <span>✕</span>
+              <span className="text-xs sm:text-sm font-bold uppercase tracking-wider">CLOSE</span>
+            </button>
 
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -20 }}
+              className="bg-white border-4 border-slate-900 brutalist-shadow max-w-2xl w-full max-h-[85vh] overflow-y-auto p-5 sm:p-8 relative font-display text-slate-900 my-0 mt-2 sm:mt-4"
+            >
               {/* Modal Header */}
-              <div className="flex items-center gap-3 border-b-4 border-slate-900 pb-4 mb-6">
+              <div className="flex items-center gap-3 border-b-4 border-slate-900 pb-4 mb-6 pr-12">
                 <span className="text-3xl">⚔️</span>
                 <div>
                   <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight">ARENA RANK MECHANISM</h2>

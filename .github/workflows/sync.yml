@@ -10,7 +10,7 @@ on:
 jobs:
   sync:
     name: Run Stats Sync
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
 
     steps:
       - name: Checkout Repository
